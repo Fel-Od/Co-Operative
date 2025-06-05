@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Co-operative</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --primary: #2a5298;
+            --primary-dark: #1e3c72;
+            --background-gradient: linear-gradient(135deg, #2a5298, #f5f7fa 80%);
+            --text-color: #222;
+        }
+    </style>
+</head>
+<body>
+    <!-- Play button for audio (required for most browsers) -->
+    <button onclick="document.getElementById('bg-audio').play()" style="margin-bottom:8px;">Play Music</button>
+    <audio id="bg-audio" loop>
+        <source src="{{ url_for('static', filename='relaxing-loop-110470.mp3') }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Modal and rules button -->
+    <button id="rules-btn" class="actions" style="margin-bottom:12px;">Show Rules</button>
+    <div id="rules-modal" class="modal" style="display:none;">
+        <div class="modal-content rules-content">
+            <span class="close" id="close-modal">&times;</span>
+            <h2>Game Rules</h2>
+            <ul>
+                <li>Reach the <strong>Target Number</strong> from the <strong>Current Number</strong> using the allowed operations.</li>
+                <li>Each operation may add points or use turns. Try to maximize your score!</li>
+                <li>Difficulty affects which operations are available:</li>
+            </ul>
+            <h3>Difficulty Levels</h3>
+            <ul>
+                <li><strong>Easy:</strong> All operations available (unlocked by score)</li>
+                <li><strong>Hard:</strong> × and ÷ available at first, ^ and √ unlock with score</li>
+                <li><strong>Extreme:</strong> ^ and √ available from the start</li>
+            </ul>
+            <p>Good luck and have fun!</p>
+        </div>
+    </div>
+
+    <!-- Color Picker OUTSIDE container -->
+    <div style="text-align:center; margin: 16px 0;">
+        <label for="color-wheel"><strong>Pick a Theme Color:</strong></label>
+        <input type="color" id="color-wheel" value="#2a5298" style="width:40px; height:40px; border:none; cursor:pointer;">
+    </div>
+
+    <div class="container">
+        <h1>Co-operative</h1>
+        <form id="difficulty-form" method="POST" autocomplete="off">
+            <label for="difficulty">Difficulty:</label>
+            <select name="difficulty" id="difficulty" class="difficulty-select" onchange="this.form.submit()">
+                <option value="Easy" {% if difficulty == 'Easy' %}selected disabled{% endif %}>Easy</option>
+                <option value="Hard" {% if difficulty == 'Hard' %}selected disabled{% endif %}>Hard</option>
+                <option value="Extreme" {% if difficulty == 'Extreme' %}selected disabled{% endif %}>Extreme</option>
+            </select>
+        </form>
+        <div class="scoreboard">
+            {% if not game_over %}
+                <div>Round: {{ round_num }} / {{ total_rounds }}</div>
+                <div>Current Number: <strong>{{ current_number }}</strong></div>
+                <div>Target Number: <strong>{{ target_number }}</strong></div>
+                <div>Points: {{ points }} | Turns: {{ turns }}</div>
+                <div>Score: <strong>{{ score }}</strong></div>
+            {% else %}
+                <h2>Game Over!</h2>
+                <div>Final Score: <strong>{{ score }}</strong></div>
+                <div class="msg success">{{ comment }}</div>
+            {% endif %}
+        </div>
+
+        {% if message %}
+            <div class="msg {% if success %}success{% endif %}">{{ message }}</div>
+        {% endif %}
+        {% if message2 %}
+            <div class="msg {% if success %}success{% endif %}">{{ message2 }}</div>
+        {% endif %}
+
+        {% if not game_over %}
+        <form class="game-form" method="POST" autocomplete="off">
+            <div class="operations">
+                <button type="submit" name="operation" value="+" {% if "+" not in allowed_ops %}disabled{% endif %}>+</button>
+                <button type="submit" name="operation" value="-" {% if "-" not in allowed_ops %}disabled{% endif %}>−</button>
+                <button type="submit" name="operation" value="*" {% if "*" not in allowed_ops %}disabled{% endif %}>×</button>
+                <button type="submit" name="operation" value="/" {% if "/" not in allowed_ops %}disabled{% endif %}>÷</button>
+                <button type="submit" name="operation" value="**" {% if "**" not in allowed_ops %}disabled{% endif %}>^</button>
+                <button type="submit" name="operation" value="sqrt()" {% if "sqrt()" not in allowed_ops %}disabled{% endif %}>√</button>
+            </div>
+            <div class="input-row">
+                <input type="number" step="any" name="operand" placeholder="Enter number">
+            </div>
+            <div class="actions">
+                <button type="submit" name="end" value="round">End Round</button>
+                <button type="submit" name="end" value="game">End Game</button>
+            </div>
+        </form>
+        {% else %}
+        <form class="game-form no-ajax" method="POST" action="{{ url_for('restart') }}">
+            <div class="actions">
+                <button type="submit">Restart Game</button>
+            </div>
+        </form>
+        {% endif %}
+
+        <div class="history theme-section">
+            <h2>History</h2>
+            <table>
+                <tr>
+                    <th>#</th>
+                    <th>Operation</th>
+                    <th>Operand</th>
+                    <th>Result</th>
+                </tr>
+                {% if history %}
+                    {% for h in history %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ h.operation }}</td>
+                        <td>{{ h.operand }}</td>
+                        <td>{{ h.result }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="empty-row">
+                        <td colspan="4">No operations yet.</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+        <div class="final-scores theme-section">
+            <h2>All Scores</h2>
+            <table>
+                <tr>
+                    <th>#</th>
+                    <th>Score</th>
+                    <th>Time</th>
+                </tr>
+                {% if final_scores %}
+                    {% for s in final_scores %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ s.score }}</td>
+                        <td>{{ s.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="empty-row">
+                        <td colspan="3">No scores yet.</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let lastClickedButton = null;
+
+    // Modal logic
+    const rulesBtn = document.getElementById('rules-btn');
+    const modal = document.getElementById('rules-modal');
+    const closeModal = document.getElementById('close-modal');
+    rulesBtn.onclick = function() { modal.style.display = 'flex'; }
+    closeModal.onclick = function() { modal.style.display = 'none'; }
+    window.onclick = function(event) {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+
+    // Color wheel logic with localStorage persistence and modal color fix
+    const colorInput = document.getElementById('color-wheel');
+    // Helper to darken color
+    function shadeColor(color, percent) {
+        let R = parseInt(color.substring(1,3),16);
+        let G = parseInt(color.substring(3,5),16);
+        let B = parseInt(color.substring(5,7),16);
+        R = parseInt(R * (100 + percent) / 100);
+        G = parseInt(G * (100 + percent) / 100);
+        B = parseInt(B * (100 + percent) / 100);
+        R = (R<255)?R:255;  
+        G = (G<255)?G:255;  
+        B = (B<255)?B:255;  
+        const RR = ((R.toString(16).length==1)?"0":"") + R.toString(16);
+        const GG = ((G.toString(16).length==1)?"0":"") + G.toString(16);
+        const BB = ((B.toString(16).length==1)?"0":"") + B.toString(16);
+        return "#" + RR + GG + BB;
+    }
+
+    // Helper to determine best text color (black or white) for contrast
+    function getContrastYIQ(hexcolor){
+        hexcolor = hexcolor.replace("#", "");
+        var r = parseInt(hexcolor.substr(0,2),16);
+        var g = parseInt(hexcolor.substr(2,2),16);
+        var b = parseInt(hexcolor.substr(4,2),16);
+        var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    }
+
+    // Apply theme color from localStorage or default
+    function applyThemeColor(color) {
+        document.documentElement.style.setProperty('--primary', color);
+        document.documentElement.style.setProperty('--primary-dark', shadeColor(color, -20));
+        document.documentElement.style.setProperty('--background-gradient', `linear-gradient(135deg, ${color}, #f5f7fa 80%)`);
+        document.documentElement.style.setProperty('--text-color', getContrastYIQ(color));
+        let rulesContent = document.querySelector('.rules-content');
+        if (rulesContent) rulesContent.style.color = color;
+
+        // Set empty-row color to the opposite of the current text color
+        let emptyRows = document.querySelectorAll('.empty-row');
+        let contrast = getContrastYIQ(color);
+        let opposite = (contrast === "#222") ? "#fff" : "#222";
+        emptyRows.forEach(row => row.style.color = opposite);
+
+        // Set scoreboard color to the adaptive contrast color
+        let scoreboard = document.querySelector('.scoreboard');
+        if (scoreboard) scoreboard.style.color = contrast;
+    }
+
+    // On color change
+    colorInput.addEventListener('input', function() {
+        const color = colorInput.value;
+        localStorage.setItem('themeColor', color);
+        applyThemeColor(color);
+    });
+
+    // On page load, restore color
+    const savedColor = localStorage.getItem('themeColor') || '#2a5298';
+    colorInput.value = savedColor;
+    applyThemeColor(savedColor);
+
+    // After AJAX update, re-apply theme and color picker value
+    function reapplyThemeAfterAjax() {
+        const color = localStorage.getItem('themeColor') || '#2a5298';
+        document.getElementById('color-wheel').value = color;
+        applyThemeColor(color);
+    }
+
+    // Track which button was clicked
+    document.addEventListener('click', function(e) {
+        if (
+            e.target.tagName === 'BUTTON' &&
+            e.target.form &&
+            e.target.form.classList.contains('game-form')
+        ) {
+            lastClickedButton = e.target;
+        }
+    }, true);
+
+    document.addEventListener('submit', function(e) {
+        // Skip AJAX for forms with .no-ajax
+        if (e.target.classList.contains('no-ajax')) return;
+
+        if (e.target.closest('.container')) {
+            e.preventDefault();
+            const form = e.target;
+            const data = new FormData(form);
+
+            // If a button was clicked, append its name/value
+            if (lastClickedButton && lastClickedButton.form === form && lastClickedButton.name) {
+                data.append(lastClickedButton.name, lastClickedButton.value);
+            }
+            lastClickedButton = null;
+
+            fetch(window.location.pathname, {
+                method: 'POST',
+                body: data
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContainer = doc.querySelector('.container');
+                if (newContainer) {
+                    document.querySelector('.container').innerHTML = newContainer.innerHTML;
+                } else {
+                    location.reload();
+                }
+                if (typeof reapplyThemeAfterAjax === "function") {
+                    reapplyThemeAfterAjax();
+                }
+            });
+        }
+    });
+});
+</script>
+</body>
+</html>
