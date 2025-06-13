@@ -74,7 +74,7 @@ def game():
             session['game_over'] = True
             sorted_scores = sorted(final_scores, key=lambda s: s["score"] if isinstance(s["score"], (int, float)) else float('-inf'), reverse=True)
             resp = make_response(render_template(
-                "game.html",
+                "index.htm",
                 game_over=True,
                 score=round(session['score'], 2) if isinstance(session['score'], numbers.Real) else "Invalid (complex)",
                 comment=get_comment(session['score']) if isinstance(session['score'], numbers.Real) else "Invalid result.",
@@ -105,7 +105,7 @@ def game():
                 session['game_over'] = True
                 sorted_scores = sorted(final_scores, key=lambda s: s["score"] if isinstance(s["score"], (int, float)) else float('-inf'), reverse=True)
                 resp = make_response(render_template(
-                    "game.html",
+                    "index.html",
                     game_over=True,
                     score=round(session['score'], 2) if isinstance(session['score'], numbers.Real) else "Invalid (complex)",
                     comment=get_comment(session['score']) if isinstance(session['score'], numbers.Real) else "Invalid result.",
@@ -129,7 +129,7 @@ def game():
                 session['history'] = []
                 sorted_scores = sorted(final_scores, key=lambda s: s["score"] if isinstance(s["score"], (int, float)) else float('-inf'), reverse=True)
                 resp = make_response(render_template(
-                    "game.html",
+                    "index.html",
                     round_num=session['round_num'],
                     total_rounds=session['rounds'],
                     current_number=round(session['current_number'], 2) if isinstance(session['current_number'], numbers.Real) else "Invalid (complex)",
@@ -255,7 +255,7 @@ def game():
                             session['game_over'] = True
                             sorted_scores = sorted(final_scores, key=lambda s: s["score"] if isinstance(s["score"], (int, float)) else float('-inf'), reverse=True)
                             resp = make_response(render_template(
-                                "game.html",
+                                "index.html",
                                 game_over=True,
                                 score=round(session['score'], 2) if isinstance(session['score'], numbers.Real) else "Invalid (complex)",
                                 comment=get_comment(session['score']) if isinstance(session['score'], numbers.Real) else "Invalid result.",
@@ -286,7 +286,7 @@ def game():
     # Always sort scores before rendering and save cookies
     sorted_scores = sorted(final_scores, key=lambda s: s["score"] if isinstance(s["score"], (int, float)) else float('-inf'), reverse=True)
     resp = make_response(render_template(
-        "game.html",
+        "index.html",
         round_num=session.get('round_num', 1),
         total_rounds=session.get('rounds', 1),
         current_number=round(session.get('current_number', 0), 2) if isinstance(session.get('current_number', 0), numbers.Real) else "Invalid (complex)",
